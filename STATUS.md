@@ -4,26 +4,33 @@ Last updated: 2026-04-26
 
 ## Project status
 
-WDS 1.0 is in a Windows 11 + AutoHotkey v2 migration phase.
+WDS 1.0 is now in the first runtime-candidate stage of the Windows 11 +
+AutoHotkey v2 migration.
 
-The repository currently contains AutoHotkey v1.1 code. That code is the reference for existing behavior, not the final implementation target.
+The main entrypoint `desktop_switcher.ahk` has been rewritten as an AutoHotkey
+v2 candidate. The old AutoHotkey v1.1 implementation is preserved under
+`legacy/v1/` as a behavior reference.
 
 ## Fixed project frame
 
 - Platform: Windows 11 only.
-- Current base: AutoHotkey v1.1.
-- Target runtime: AutoHotkey v2.
+- Runtime target: AutoHotkey v2.
+- Main entrypoint: `desktop_switcher.ahk`.
+- Hotkey configuration: `user_config.ahk`.
+- Legacy reference: `legacy/v1/`.
 - Documentation tone: calm, practical, human-first.
 - Fork origin: acknowledged with gratitude.
 - Technical direction: independent.
 
-## Current reference files
+## Current runtime files
 
-These files are expected to exist in the current project state:
+These files are expected in the current project state:
 
 - `desktop_switcher.ahk`
 - `user_config.ahk`
 - `VirtualDesktopAccessor.dll`
+- `legacy/v1/desktop_switcher.ahk`
+- `legacy/v1/user_config.ahk`
 - `LICENSE.txt`
 - `README.md`
 
@@ -32,16 +39,21 @@ These files are expected to exist in the current project state:
 - AutoHotkey v1 compatibility is not a target.
 - Windows 10 compatibility is not a target.
 - Windows 11 behavior is the only platform behavior to validate.
-- The project may redesign inherited structure.
-- Human-first means attribution and clarity, not extra ceremony.
+- The v2 runtime candidate exists but is not yet manually validated.
+- Runtime success claims require a recorded Windows 11 + AutoHotkey v2 test.
+- `VirtualDesktopAccessor.dll` is still part of the first v2 candidate.
 
 ## Needs confirmation on Windows 11
 
-- Which Windows 11 builds should be used for manual testing.
+- AutoHotkey v2 startup and syntax behavior.
 - Whether the existing `VirtualDesktopAccessor.dll` remains suitable.
-- Whether the final v2 version should keep the same default hotkeys.
-- Whether the final entrypoint remains `desktop_switcher.ahk` or changes to a v2-specific file.
-- Whether packaging should remain script-only or include a release bundle.
+- Direct desktop switching by number.
+- Left/right and last-desktop switching.
+- Create/delete desktop behavior.
+- Moving the active window to another desktop and following it.
+- CapsLock prefix behavior and standalone CapsLock behavior.
+- Normal versus administrator elevation behavior.
+- Whether the release should remain script-only or include a bundle.
 
 ## Current non-goals
 
@@ -49,4 +61,4 @@ These files are expected to exist in the current project state:
 - AutoHotkey v1 release maintenance.
 - Linux, macOS, or cross-platform support.
 - Marketing language in README.
-- Large rewrites without a clear migration reason.
+- Compatibility claims without recorded manual tests.
