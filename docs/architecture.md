@@ -1,42 +1,54 @@
-# Architecture notes
+# Architecture Notes
 
 ## Current architecture
 
-The current repository is based on an AutoHotkey v1.1 script workflow.
+The repository now has a first AutoHotkey v2 runtime candidate.
 
-Expected current files:
+Current runtime files:
 
-- `desktop_switcher.ahk` — main script and desktop actions.
-- `user_config.ahk` — user-facing hotkey mappings.
-- `VirtualDesktopAccessor.dll` — native helper used by the existing implementation.
+- `desktop_switcher.ahk` - main AutoHotkey v2 script.
+- `user_config.ahk` - AutoHotkey v2 hotkey configuration.
+- `VirtualDesktopAccessor.dll` - native helper used for desktop/window access.
 
-This architecture is a reference for behavior. It is not the required target structure.
+Legacy reference files:
 
-## Target architecture
+- `legacy/v1/desktop_switcher.ahk`
+- `legacy/v1/user_config.ahk`
 
-Target runtime: AutoHotkey v2.
-Target platform: Windows 11.
+The legacy files are behavior references. They are not the required target
+structure.
 
-The final structure should make these areas easy to read and test:
+## Runtime areas
+
+The v2 candidate keeps these areas readable in one file for the first product
+step:
 
 - startup and environment checks;
-- hotkey registration;
-- desktop state access;
+- DLL loading and export lookup;
+- registry desktop-state mapping;
 - desktop switching;
-- window movement;
-- configuration;
-- debug or troubleshooting output.
+- foremost-window focus after switching;
+- active-window movement;
+- desktop creation and deletion;
+- hotkey registration through `user_config.ahk`.
 
-A possible structure:
+## Current flow
+
+```text
+desktop_switcher.ahk
+  -> checks AutoHotkey v2
+  -> loads VirtualDesktopAccessor.dll
+  -> maps current desktop state from the Windows registry
+  -> includes user_config.ahk
+  -> hotkeys call desktop/window functions
+```
+
+## Possible later structure
+
+The project may split runtime logic after the v2 candidate is manually tested:
 
 ```text
 WDS-1.0/
-  README.md
-  CODEX.md
-  STATUS.md
-  TASKS.md
-  HANDOFF.md
-  DECISIONS.md
   desktop_switcher.ahk
   user_config.ahk
   lib/
@@ -45,21 +57,17 @@ WDS-1.0/
     window_moving.ahk
     registry_desktops.ahk
     debug.ahk
-  docs/
-    architecture.md
-    migration_ahk_v2.md
-    manual_test_checklist.md
 ```
 
-This is a planning structure, not a requirement to rename files immediately.
+Do not split files before it helps maintenance or testing.
 
 ## Main migration questions
 
-- Should the final v2 entrypoint remain `desktop_switcher.ahk`?
-- Should v1 files be replaced, renamed, or kept temporarily during migration?
-- Does the current `VirtualDesktopAccessor.dll` work correctly for the Windows 11 target?
-- Which hotkeys should remain default in the v2 implementation?
-- Which behavior should be simplified instead of ported directly?
+- Does the current `VirtualDesktopAccessor.dll` work correctly on the Windows 11 target?
+- Are the default CapsLock hotkeys comfortable after real use?
+- Does standalone CapsLock behavior work as intended with custom combinations?
+- Should release packaging remain script-only or include a small bundle?
+- Which runtime functions should move to `lib/` after the first manual test?
 
 ## Runtime boundaries
 
@@ -67,4 +75,5 @@ The project should not claim Windows 10 support.
 
 The project should not claim AutoHotkey v1 compatibility as a target.
 
-The project should not claim the v2 implementation works until it has been manually tested on Windows 11.
+The project should not claim the v2 implementation works until it has been
+manually tested on Windows 11.

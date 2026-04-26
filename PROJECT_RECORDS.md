@@ -15,7 +15,9 @@ Prefer:
 ```text
 Windows 11 only.
 Target runtime: AutoHotkey v2.
-Current code: AutoHotkey v1.1 reference.
+Current runtime: v2 candidate.
+Legacy reference: legacy/v1/.
+Manual test: pending.
 ```
 
 Avoid:
@@ -37,13 +39,13 @@ Human-first means:
 
 ## Required project records
 
-- `README.md` — entry point.
-- `STATUS.md` — current truth.
-- `TASKS.md` — active work.
-- `HANDOFF.md` — restart notes.
-- `DECISIONS.md` — stable decisions.
-- `CODEX.md` — AI-assisted development rules.
-- `CHANGELOG.md` — dated changes.
+- `README.md` - entry point.
+- `STATUS.md` - current truth.
+- `TASKS.md` - active work.
+- `HANDOFF.md` - restart notes.
+- `DECISIONS.md` - stable decisions.
+- `CODEX.md` - AI-assisted development rules.
+- `CHANGELOG.md` - dated changes.
 
 ## How to update records
 
@@ -55,6 +57,12 @@ When a project direction changes:
 4. Update `HANDOFF.md` so the next session does not restart from old assumptions.
 5. Update `README.md` only after the scope is stable enough for readers.
 
+When runtime behavior changes:
+
+1. Update `docs/v1_behavior_inventory.md` only if legacy-reference facts change.
+2. Update `docs/migration_ahk_v2.md` with the migration status.
+3. Do not mark behavior as tested unless the manual checklist was actually run.
+
 ## Rule for stale notes
 
 If a note conflicts with the current frame, update it or mark it obsolete.
@@ -62,7 +70,10 @@ If a note conflicts with the current frame, update it or mark it obsolete.
 Current frame:
 
 ```text
-WDS-1.0 — Windows 11 only.
-Current base — AutoHotkey v1.1.
-Target — AutoHotkey v2.
+WDS 1.0 - Windows 11 only.
+Runtime target - AutoHotkey v2.
+Main entrypoint - desktop_switcher.ahk.
+Current runtime - AutoHotkey v2 candidate.
+Legacy reference - legacy/v1/.
+Manual Windows 11 test - pending.
 ```

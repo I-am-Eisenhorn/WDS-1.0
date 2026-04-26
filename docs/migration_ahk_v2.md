@@ -1,14 +1,24 @@
-# AutoHotkey v2 migration notes
+# AutoHotkey v2 Migration Notes
 
 ## Goal
 
-Move WDS 1.0 from AutoHotkey v1.1 source code to an AutoHotkey v2 implementation for Windows 11.
+Move WDS 1.0 from AutoHotkey v1.1 source code to an AutoHotkey v2
+implementation for Windows 11.
 
 This is a real migration, not a cosmetic syntax edit.
 
-## Current reference
+## Current result
 
-The current v1 files show useful behavior:
+A first AutoHotkey v2 runtime candidate now exists:
+
+- `desktop_switcher.ahk`
+- `user_config.ahk`
+
+The old AutoHotkey v1.1 files are preserved under `legacy/v1/`.
+
+## Behavior carried forward
+
+The v2 candidate is intended to carry forward:
 
 - direct desktop switching;
 - left and right desktop movement;
@@ -17,111 +27,68 @@ The current v1 files show useful behavior:
 - moving the active window between desktops;
 - configurable hotkeys.
 
-The v2 version may keep this behavior while changing implementation structure.
+See `docs/v1_behavior_inventory.md` for the behavior inventory taken from the
+legacy script.
 
-## v2 migration areas
+## Migration areas covered in the candidate
 
 ### Script header
 
-Use:
+The main script uses:
 
 ```ahk
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 ```
 
-Remove v1-only directives that are obsolete in v2.
-
 ### Syntax
 
-Convert v1 legacy patterns to v2 expression-first patterns:
+The candidate replaces v1 command syntax with v2 function-style calls for:
 
-- assignment with `:=`;
-- function calls instead of command syntax;
-- quoted strings where v2 expects expressions;
-- no percent wrapping for normal variable references;
-- explicit return values where old commands used output variables.
+- registry reads;
+- window queries;
+- sending Windows desktop shortcuts;
+- debug output;
+- DLL calls;
+- startup errors.
 
 ### Hotkeys
 
-Review all hotkeys from `user_config.ahk`.
+`user_config.ahk` has been rewritten as an AutoHotkey v2 hotkey configuration.
 
-Check:
+The default mappings still use CapsLock combinations, number-row shortcuts,
+numpad shortcuts, left/right movement shortcuts, and window movement shortcuts.
 
-- CapsLock modifier behavior;
-- number row hotkeys;
-- numpad hotkeys;
-- left/right movement hotkeys;
-- window movement hotkeys;
-- whether hotkeys should be data-driven in v2.
+Standalone CapsLock behavior is explicitly defined and must be manually tested.
 
 ### DLL access
 
-Review every `DllCall`.
+`VirtualDesktopAccessor.dll` is still used in the first v2 candidate.
 
-Check:
+The script now checks that the DLL exists and that these exports are available:
 
-- function names;
-- argument types;
-- return types;
-- pointer handling;
-- error behavior;
-- whether `VirtualDesktopAccessor.dll` is still the right helper for Windows 11.
+- `IsWindowOnDesktopNumber`
+- `MoveWindowToDesktopNumber`
+- `GoToDesktopNumber`
 
 ### Registry access
 
-Review registry reads used for virtual desktop state.
-
-Check:
-
-- Windows 11 registry paths;
-- error handling when keys are missing;
-- how state is refreshed after desktop changes.
-
-### Errors
-
-Prefer explicit error handling.
-
-AutoHotkey v2 functions may throw exceptions where v1 code used `ErrorLevel` or loose command behavior.
-
-## Suggested migration phases
-
-### Phase 1 — documentation and inventory
-
-- Align MD files with Windows 11 + AHK v2 scope.
-- List current functions and hotkeys.
-- Mark behavior that needs confirmation.
-
-### Phase 2 — v2 skeleton
-
-- Add a minimal v2 entrypoint.
-- Add startup checks.
-- Add a visible message or tray note only if useful.
-- Do not claim feature parity.
-
-### Phase 3 — hotkeys
-
-- Port hotkey registration.
-- Keep config readable.
-- Test CapsLock behavior on Windows 11.
-
-### Phase 4 — desktop access
-
-- Port state reading.
-- Port switching.
-- Port last-desktop tracking.
-
-### Phase 5 — window movement
-
-- Port active-window movement.
-- Test with normal and elevated windows.
-
-### Phase 6 — cleanup
-
-- Remove stale v1 instructions.
-- Update quick start.
-- Update troubleshooting after real test results.
+The candidate still maps desktop state through the Windows virtual desktop
+registry values. Registry failures are logged through `OutputDebug` and fall
+back to conservative defaults.
 
 ## Manual testing requirement
 
-Manual tests must be run on Windows 11 with AutoHotkey v2 before the README says the v2 implementation works.
+Manual tests must be run on Windows 11 with AutoHotkey v2 before the README says
+the v2 implementation works.
+
+Use `docs/manual_test_checklist.md`.
+
+## Phase status
+
+- Phase 1 - documentation and inventory: done.
+- Phase 2 - v2 skeleton: done as a runtime candidate.
+- Phase 3 - hotkeys: candidate added, manual test pending.
+- Phase 4 - desktop access: candidate added, manual test pending.
+- Phase 5 - window movement: candidate added, manual test pending.
+- Phase 6 - cleanup: pending after manual test results.

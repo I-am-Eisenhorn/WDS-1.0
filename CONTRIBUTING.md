@@ -4,7 +4,9 @@ Last updated: 2026-04-26
 
 Thanks for helping improve WDS 1.0.
 
-This project is small on purpose. Good contributions keep it easy to run, easy to inspect, and easy to recover if a Windows update changes virtual desktop behavior.
+This project is small on purpose. Good contributions keep it easy to run, easy
+to inspect, and easy to recover if a Windows update changes virtual desktop
+behavior.
 
 ## Before Changing Code
 
@@ -14,23 +16,25 @@ Read these first:
 2. `STATUS.md`
 3. `TASKS.md`
 4. `DECISIONS.md`
+5. `CODEX.md`
 
 Check whether the work is already listed, blocked, or out of scope.
 
 ## Good First Contributions
 
-- Verify the current script on a specific Windows build.
-- Record a clear smoke test result in `STATUS.md`.
-- Improve setup instructions without changing behavior.
+- Run the current AutoHotkey v2 candidate on a specific Windows 11 build.
+- Record a clear manual test result in `docs/manual_test_checklist.md`.
+- Fix a focused AutoHotkey v2 syntax or runtime issue.
 - Clarify `VirtualDesktopAccessor.dll` source and compatibility.
-- Fix small AutoHotkey v1 issues with a focused patch.
+- Improve setup instructions without overclaiming behavior.
 
 ## Code Guidelines
 
-- Keep AutoHotkey v1 syntax unless a migration has been explicitly accepted.
+- Keep the main runtime in AutoHotkey v2 syntax.
 - Keep shortcut mappings in `user_config.ahk`.
-- Keep runtime behavior in `desktop_switcher.ahk`.
-- Avoid broad rewrites until the current baseline is tested.
+- Keep runtime behavior in `desktop_switcher.ahk` unless a split to `lib/` is intentional.
+- Keep legacy AutoHotkey v1 files under `legacy/v1/` for reference.
+- Avoid broad rewrites until the current v2 candidate is manually tested.
 - Do not add installer, UI, or packaging work in the same change as shortcut logic.
 
 ## Documentation Guidelines
@@ -53,7 +57,7 @@ A useful test report includes:
 - AutoHotkey version.
 - Whether the script was run normally or as administrator.
 - Which shortcuts were tested.
-- Whether `VirtualDesktopAccessor.dll` worked for moving windows.
+- Whether `VirtualDesktopAccessor.dll` worked for switching and moving windows.
 - Any error messages or debug output.
 
 ## Pull Request Shape
