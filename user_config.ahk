@@ -1,55 +1,48 @@
-; ====================
-; === INSTRUCTIONS ===
-; ====================
-; 1. Any lines starting with ; are ignored
-; 2. After changing this config file run script file "desktop_switcher.ahk"
-; 3. Every line is in the format HOTKEY::ACTION
+; WDS 1.0 default hotkeys for AutoHotkey v2.
+; Edit this file, then reload desktop_switcher.ahk.
 
-; === SYMBOLS ===
-; !   <- Alt
-; +   <- Shift
-; ^   <- Ctrl
-; #   <- Win
-; For more, visit https://autohotkey.com/docs/Hotkeys.htm
+; Symbol guide:
+; ! = Alt
+; + = Shift
+; ^ = Ctrl
+; # = Win
 
-; === EXAMPLES ===
-; !n::switchDesktopToRight()             <- <Alt> + <N> will switch to the next desktop (to the right of the current one)
-; #!space::switchDesktopToRight()        <- <Win> + <Alt> + <Space> will switch to next desktop
-; CapsLock & n::switchDesktopToRight()   <- <CapsLock> + <N> will switch to the next desktop (& is necessary when using non-modifier key such as CapsLock)
+; Keep CapsLock usable when it is pressed by itself.
+CapsLock::SetCapsLockState(GetKeyState("CapsLock", "T") ? "Off" : "On")
 
-; ===========================
-; === END OF INSTRUCTIONS ===
-; ===========================
+; Switch directly to desktops 1-9.
+CapsLock & 1::SwitchDesktopByNumber(1)
+CapsLock & 2::SwitchDesktopByNumber(2)
+CapsLock & 3::SwitchDesktopByNumber(3)
+CapsLock & 4::SwitchDesktopByNumber(4)
+CapsLock & 5::SwitchDesktopByNumber(5)
+CapsLock & 6::SwitchDesktopByNumber(6)
+CapsLock & 7::SwitchDesktopByNumber(7)
+CapsLock & 8::SwitchDesktopByNumber(8)
+CapsLock & 9::SwitchDesktopByNumber(9)
 
-CapsLock & 1::switchDesktopByNumber(1)
-CapsLock & 2::switchDesktopByNumber(2)
-CapsLock & 3::switchDesktopByNumber(3)
-CapsLock & 4::switchDesktopByNumber(4)
-CapsLock & 5::switchDesktopByNumber(5)
-CapsLock & 6::switchDesktopByNumber(6)
-CapsLock & 7::switchDesktopByNumber(7)
-CapsLock & 8::switchDesktopByNumber(8)
-CapsLock & 9::switchDesktopByNumber(9)
+CapsLock & Numpad1::SwitchDesktopByNumber(1)
+CapsLock & Numpad2::SwitchDesktopByNumber(2)
+CapsLock & Numpad3::SwitchDesktopByNumber(3)
+CapsLock & Numpad4::SwitchDesktopByNumber(4)
+CapsLock & Numpad5::SwitchDesktopByNumber(5)
+CapsLock & Numpad6::SwitchDesktopByNumber(6)
+CapsLock & Numpad7::SwitchDesktopByNumber(7)
+CapsLock & Numpad8::SwitchDesktopByNumber(8)
+CapsLock & Numpad9::SwitchDesktopByNumber(9)
 
-CapsLock & Numpad1::switchDesktopByNumber(1)
-CapsLock & Numpad2::switchDesktopByNumber(2)
-CapsLock & Numpad3::switchDesktopByNumber(3)
-CapsLock & Numpad4::switchDesktopByNumber(4)
-CapsLock & Numpad5::switchDesktopByNumber(5)
-CapsLock & Numpad6::switchDesktopByNumber(6)
-CapsLock & Numpad7::switchDesktopByNumber(7)
-CapsLock & Numpad8::switchDesktopByNumber(8)
-CapsLock & Numpad9::switchDesktopByNumber(9)
+; Move between desktops.
+CapsLock & n::SwitchDesktopToRight()
+CapsLock & p::SwitchDesktopToLeft()
+CapsLock & s::SwitchDesktopToRight()
+CapsLock & a::SwitchDesktopToLeft()
+CapsLock & Tab::SwitchDesktopToLastOpened()
 
-CapsLock & n::switchDesktopToRight()
-CapsLock & p::switchDesktopToLeft()
-CapsLock & s::switchDesktopToRight()
-CapsLock & a::switchDesktopToLeft()
-CapsLock & tab::switchDesktopToLastOpened()
+; Create and delete desktops.
+CapsLock & c::CreateVirtualDesktop()
+CapsLock & d::DeleteVirtualDesktop()
 
-CapsLock & c::createVirtualDesktop()
-CapsLock & d::deleteVirtualDesktop()
-
+; Move the active window to desktops 1-9 and follow it.
 CapsLock & q::MoveCurrentWindowToDesktop(1)
 CapsLock & w::MoveCurrentWindowToDesktop(2)
 CapsLock & e::MoveCurrentWindowToDesktop(3)
@@ -63,39 +56,25 @@ CapsLock & o::MoveCurrentWindowToDesktop(9)
 CapsLock & Right::MoveCurrentWindowToRightDesktop()
 CapsLock & Left::MoveCurrentWindowToLeftDesktop()
 
-; === INSTRUCTIONS ===
-; Below is the alternate key configuration. Delete symbol ; in the beginning of the line to enable.
-; Note, that  ^!1  means "Ctrl + Alt + 1" and  ^#1  means "Ctrl + Win + 1"
-; === END OF INSTRUCTIONS ===
+; Alternate examples. Uncomment only the lines you want to use.
+; ^!1::SwitchDesktopByNumber(1)
+; ^!2::SwitchDesktopByNumber(2)
+; ^!3::SwitchDesktopByNumber(3)
+; ^!4::SwitchDesktopByNumber(4)
+; ^!5::SwitchDesktopByNumber(5)
+; ^!6::SwitchDesktopByNumber(6)
+; ^!7::SwitchDesktopByNumber(7)
+; ^!8::SwitchDesktopByNumber(8)
+; ^!9::SwitchDesktopByNumber(9)
 
-; ^!1::switchDesktopByNumber(1)
-; ^!2::switchDesktopByNumber(2)
-; ^!3::switchDesktopByNumber(3)
-; ^!4::switchDesktopByNumber(4)
-; ^!5::switchDesktopByNumber(5)
-; ^!6::switchDesktopByNumber(6)
-; ^!7::switchDesktopByNumber(7)
-; ^!8::switchDesktopByNumber(8)
-; ^!9::switchDesktopByNumber(9)
+; ^!n::SwitchDesktopToRight()
+; ^!p::SwitchDesktopToLeft()
+; ^!s::SwitchDesktopToRight()
+; ^!a::SwitchDesktopToLeft()
+; ^!Tab::SwitchDesktopToLastOpened()
 
-; ^!Numpad1::switchDesktopByNumber(1)
-; ^!Numpad2::switchDesktopByNumber(2)
-; ^!Numpad3::switchDesktopByNumber(3)
-; ^!Numpad4::switchDesktopByNumber(4)
-; ^!Numpad5::switchDesktopByNumber(5)
-; ^!Numpad6::switchDesktopByNumber(6)
-; ^!Numpad7::switchDesktopByNumber(7)
-; ^!Numpad8::switchDesktopByNumber(8)
-; ^!Numpad9::switchDesktopByNumber(9)
-
-; ^!n::switchDesktopToRight()
-; ^!p::switchDesktopToLeft()
-; ^!s::switchDesktopToRight()
-; ^!a::switchDesktopToLeft()
-; ^!tab::switchDesktopToLastOpened()
-
-; ^!c::createVirtualDesktop()
-; ^!d::deleteVirtualDesktop()
+; ^!c::CreateVirtualDesktop()
+; ^!d::DeleteVirtualDesktop()
 
 ; ^#1::MoveCurrentWindowToDesktop(1)
 ; ^#2::MoveCurrentWindowToDesktop(2)
@@ -107,24 +86,7 @@ CapsLock & Left::MoveCurrentWindowToLeftDesktop()
 ; ^#8::MoveCurrentWindowToDesktop(8)
 ; ^#9::MoveCurrentWindowToDesktop(9)
 
-; ^#Numpad1::MoveCurrentWindowToDesktop(1)
-; ^#Numpad2::MoveCurrentWindowToDesktop(2)
-; ^#Numpad3::MoveCurrentWindowToDesktop(3)
-; ^#Numpad4::MoveCurrentWindowToDesktop(4)
-; ^#Numpad5::MoveCurrentWindowToDesktop(5)
-; ^#Numpad6::MoveCurrentWindowToDesktop(6)
-; ^#Numpad7::MoveCurrentWindowToDesktop(7)
-; ^#Numpad8::MoveCurrentWindowToDesktop(8)
-; ^#Numpad9::MoveCurrentWindowToDesktop(9)
-
 ; ^#Right::MoveCurrentWindowToRightDesktop()
 ; ^#Left::MoveCurrentWindowToLeftDesktop()
-
-
-
-; === INSTRUCTIONS ===
-; Additional alternative shortcut for moving current window to left or right desktop (ctrl+shift+Win+left/right)
-; === END OF INSTRUCTIONS ===
-
 ; ^#+Right::MoveCurrentWindowToRightDesktop()
 ; ^#+Left::MoveCurrentWindowToLeftDesktop()
