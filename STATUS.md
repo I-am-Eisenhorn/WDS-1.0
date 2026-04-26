@@ -1,59 +1,52 @@
-# Project Status
+# STATUS.md
 
 Last updated: 2026-04-26
-Repository: `I-am-Eisenhorn/WDS-1.0`
-Branch: `master`
-Mode: legacy project restart, documentation-first
 
-## Active Truth
+## Project status
 
-WDS 1.0 is currently a lightweight AutoHotkey v1 project for Windows virtual desktop shortcuts.
+WDS 1.0 is in a Windows 11 + AutoHotkey v2 migration phase.
 
-The project is not yet in a verified 2026 release state. The code may work, but this repository does not currently contain a fresh compatibility report for recent Windows 10 or Windows 11 builds.
+The repository currently contains AutoHotkey v1.1 code. That code is the reference for existing behavior, not the final implementation target.
 
-## Confirmed From Repository Source
+## Fixed project frame
 
-- `desktop_switcher.ahk` is the runtime entrypoint.
-- `user_config.ahk` stores the default and alternate shortcut mappings.
-- `VirtualDesktopAccessor.dll` is present in the repository and is loaded by `desktop_switcher.ahk` from the script folder.
-- The script requires AutoHotkey v1.1.33+.
-- AutoHotkey v2 is not supported by the current scripts.
-- The script can switch desktops, create/delete desktops, and move the active window between desktops.
-- The script reads virtual desktop state from the Windows registry and includes a Windows 11 registry path fallback.
+- Platform: Windows 11 only.
+- Current base: AutoHotkey v1.1.
+- Target runtime: AutoHotkey v2.
+- Documentation tone: calm, practical, human-first.
+- Fork origin: acknowledged with gratitude.
+- Technical direction: independent.
 
-## Not Yet Verified
+## Current reference files
 
-- Fresh runtime test on Windows 10.
-- Fresh runtime test on Windows 11.
-- Whether the committed `VirtualDesktopAccessor.dll` is compatible with the newest Windows builds.
-- Whether every default shortcut works under normal and elevated app windows.
-- Whether startup instructions still work without adjustment.
-- Project license status for this fork.
-- Release packaging format.
+These files are expected to exist in the current project state:
 
-## Product Boundary
+- `desktop_switcher.ahk`
+- `user_config.ahk`
+- `VirtualDesktopAccessor.dll`
+- `LICENSE.txt`
+- `README.md`
 
-Current scope:
+## Active truth
 
-- Direct keyboard control for Windows virtual desktops.
-- Small AutoHotkey v1 script surface.
-- Human-readable configuration in `user_config.ahk`.
+- AutoHotkey v1 compatibility is not a target.
+- Windows 10 compatibility is not a target.
+- Windows 11 behavior is the only platform behavior to validate.
+- The project may redesign inherited structure.
+- Human-first means attribution and clarity, not extra ceremony.
 
-Out of scope until deliberately reopened:
+## Needs confirmation on Windows 11
 
-- Full desktop environment replacement.
-- Wallpaper management per desktop.
-- Large UI shell.
-- AutoHotkey v2 migration.
-- Installer or marketplace distribution.
+- Which Windows 11 builds should be used for manual testing.
+- Whether the existing `VirtualDesktopAccessor.dll` remains suitable.
+- Whether the final v2 version should keep the same default hotkeys.
+- Whether the final entrypoint remains `desktop_switcher.ahk` or changes to a v2-specific file.
+- Whether packaging should remain script-only or include a release bundle.
 
-## Acceptance Target For A 2026 Ready State
+## Current non-goals
 
-The repository can be called 2026-ready only after these are true:
-
-- A current Windows 11 smoke test is recorded.
-- A current Windows 10 smoke test is recorded or explicitly marked unsupported.
-- The DLL origin and compatibility status are documented.
-- Startup behavior is tested.
-- License status is clarified.
-- A release ZIP or installation path is documented.
+- Windows 10 testing matrix.
+- AutoHotkey v1 release maintenance.
+- Linux, macOS, or cross-platform support.
+- Marketing language in README.
+- Large rewrites without a clear migration reason.
