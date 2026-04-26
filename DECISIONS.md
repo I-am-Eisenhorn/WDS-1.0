@@ -1,53 +1,60 @@
-# Decisions
+# DECISIONS.md
 
-Last updated: 2026-04-26
+## D001 — Windows 11 only
 
-This file records decisions that should remain stable until there is a clear reason to change them.
+Decision: WDS 1.0 supports Windows 11 only.
 
-## D001 - Keep The Current Baseline On AutoHotkey v1
+Reason: The project is being shaped around the current maintainer goal, not a broad compatibility matrix.
 
-Decision: the current project baseline remains AutoHotkey v1.
+Impact:
 
-Reason: `desktop_switcher.ahk` declares `#Requires AutoHotkey v1.1.33+`, and `user_config.ahk` uses AutoHotkey v1 syntax. A migration to AutoHotkey v2 would be a real engineering task, not a documentation edit.
+- Do not add Windows 10 as a support target.
+- Do not build a Windows 10 manual test checklist unless explicitly requested.
+- Documentation should mention Windows 11 only.
 
-Status: active.
+## D002 — AutoHotkey v2 target
 
-## D002 - Use Human-First Project Records
+Decision: WDS 1.0 targets AutoHotkey v2.
 
-Decision: project notes should be short, dated, and written for a person opening the repository under time pressure.
+Reason: The existing codebase is AutoHotkey v1.1, but the project goal is migration to v2.
 
-Reason: this is an old project restart. The repository needs a clear front door and a small set of source-of-truth notes rather than one large README carrying every detail.
+Impact:
 
-Status: active.
+- AutoHotkey v1 compatibility is not a target.
+- AutoHotkey v1 code is a reference for behavior.
+- New runtime code should use AutoHotkey v2 syntax.
 
-## D003 - Separate Active Truth From Historical Detail
+## D003 — Fork origin is attribution, not constraint
 
-Decision: active truth belongs in `STATUS.md`; historical changes belong in `CHANGELOG.md`; next-session restart notes belong in `HANDOFF.md`.
+Decision: The fork origin remains visible, but inherited architecture is not binding.
 
-Reason: mixing old background, planned work, and current facts makes the project hard to resume safely.
+Reason: The project is grateful for the original work while moving independently.
 
-Status: active.
+Impact:
 
-## D004 - Do Not Overclaim Windows Compatibility
+- Preserve credit.
+- Do not erase provenance.
+- Do not keep old structure only because it was inherited.
 
-Decision: the documentation must not claim current Windows 10 or Windows 11 release readiness until a fresh test is recorded.
+## D004 — Documentation tone
 
-Reason: the source contains Windows registry handling and a Windows 11 fallback, but source inspection is not the same as runtime validation.
+Decision: Documentation should be calm, direct, and human-first.
 
-Status: active.
+Reason: The project should be easy to understand without promotional language.
 
-## D005 - Keep The Core Scope Small
+Impact:
 
-Decision: WDS 1.0 remains focused on virtual desktop keyboard control.
+- Avoid inflated claims.
+- Avoid special ceremonial wording.
+- Keep notes useful for people and for Codex.
 
-Reason: the project is valuable because it is small, fast, and easy to reason about. New UI, installer, tray features, or desktop personalization should wait until the base workflow is verified.
+## D005 — Runtime claims require Windows 11 testing
 
-Status: active.
+Decision: Runtime success claims require real Windows 11 manual testing.
 
-## D006 - Treat License Status As Unresolved
+Reason: AutoHotkey desktop automation depends on OS behavior, hotkeys, elevation, and native helper compatibility.
 
-Decision: do not make redistribution or packaging claims until license status is clarified.
+Impact:
 
-Reason: this fork currently needs explicit license verification before a 2026-ready release can be described confidently.
-
-Status: active.
+- If not tested, say not tested.
+- Keep unverified items in `STATUS.md` or `TASKS.md`.
