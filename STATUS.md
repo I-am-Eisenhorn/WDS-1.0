@@ -40,8 +40,24 @@ These files are expected in the current project state:
 - Windows 10 compatibility is not a target.
 - Windows 11 behavior is the only platform behavior to validate.
 - The v2 runtime candidate exists but is not yet manually validated.
+- A sandbox startup smoke test passed with portable AutoHotkey 2.0.25.
 - Runtime success claims require a recorded Windows 11 + AutoHotkey v2 test.
 - `VirtualDesktopAccessor.dll` is still part of the first v2 candidate.
+
+## Latest verification
+
+Date: 2026-04-26
+
+Sandbox result:
+
+- Source runtime archive: `C:\CD\AutoHotkey_2.0.25.zip`.
+- Portable runtime used: `AutoHotkey64.exe`.
+- AutoHotkey version confirmed: `2.0.25`.
+- `desktop_switcher.ahk` started and stayed resident during a short smoke test.
+- The test process was stopped after the startup check.
+
+Limit: the sandbox reports Windows 10, so this is not a Windows 11 manual test
+and does not validate virtual desktop behavior.
 
 ## Needs confirmation on Windows 11
 

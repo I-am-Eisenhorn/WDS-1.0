@@ -9,6 +9,7 @@ Runtime migration candidate added:
 - Preserved the old AutoHotkey v1.1 files under `legacy/v1/`.
 - Added a v1 behavior inventory for migration review.
 - Updated project records to mark the v2 runtime as a candidate, not a tested release.
+- Verified sandbox startup with portable AutoHotkey 2.0.25; the script stayed resident and was then stopped.
 
 Still not done:
 

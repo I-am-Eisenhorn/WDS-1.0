@@ -44,3 +44,4 @@
 - Old v1 runtime preserved under `legacy/v1/`.
 - First AutoHotkey v2 runtime candidate added as `desktop_switcher.ahk`.
 - First AutoHotkey v2 hotkey config added as `user_config.ahk`.
+- Sandbox startup smoke test passed with portable AutoHotkey 2.0.25.

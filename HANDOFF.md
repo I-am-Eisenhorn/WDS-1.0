@@ -29,8 +29,25 @@ Current truth:
 Windows 11 only.
 AutoHotkey v2 target.
 desktop_switcher.ahk is the v2 runtime candidate.
+Sandbox startup smoke test passed with portable AutoHotkey 2.0.25.
 Manual Windows 11 testing is still required.
 ```
+
+## Latest verification
+
+Date: 2026-04-26
+
+Sandbox smoke test:
+
+- Used `C:\CD\AutoHotkey_2.0.25.zip`.
+- Ran portable `AutoHotkey64.exe`.
+- Confirmed AutoHotkey version: `2.0.25`.
+- Started `desktop_switcher.ahk`.
+- The script stayed resident for a short startup check and was then stopped.
+- No AutoHotkey v2 startup error was observed in this sandbox run.
+
+This confirms only basic AutoHotkey v2 startup in the current sandbox. It does
+not confirm Windows 11 virtual desktop behavior.
 
 ## Next useful work
 
