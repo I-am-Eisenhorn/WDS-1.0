@@ -1,78 +1,68 @@
-# Project Records Style
+# PROJECT_RECORDS.md
 
-Last updated: 2026-04-26
+## Purpose
 
-This is the writing contract for WDS 1.0 project notes.
+Project records keep the work understandable between sessions.
 
-## Human-First Standard
+Use them to preserve decisions, current state, open work, and restart context.
 
-Write for a real person returning to the project after a break.
+## Writing style
 
-A good note answers four questions quickly:
+Use plain language.
 
-1. What is true right now?
-2. What changed?
-3. What is still unknown?
-4. What should happen next?
+Prefer:
 
-## 2026 Style Rules
+```text
+Windows 11 only.
+Target runtime: AutoHotkey v2.
+Current code: AutoHotkey v1.1 reference.
+```
 
-- Start with the current state, not the backstory.
-- Date every status-changing note.
-- Use short sections with plain headings.
-- Keep claims testable.
-- Mark unknowns as unknowns.
-- Prefer checklists for work, tables for shortcuts, and short paragraphs for context.
-- Link to source files when a claim depends on a file.
-- Keep `README.md` useful for a first-time human reader.
-- Keep `STATUS.md` useful for active truth.
-- Keep `HANDOFF.md` useful for the next session.
-- Keep `TASKS.md` useful for execution.
-- Keep `DECISIONS.md` useful for settled choices.
-- Keep `CHANGELOG.md` useful for history.
+Avoid:
 
-## What To Avoid
+```text
+Revolutionary productivity platform.
+Production-ready across Windows versions.
+Seamless next-generation experience.
+```
 
-- Do not turn the README into a full archive.
-- Do not bury active blockers under optimistic language.
-- Do not say `supported` when the repository only proves `present in source`.
-- Do not repeat the same background in every file.
-- Do not add marketing language before runtime behavior is verified.
-- Do not mix old upstream notes with current fork status unless the difference is explicit.
+## Human-first documentation
 
-## Claim Levels
+Human-first means:
 
-Use these words deliberately:
+- people can understand the project quickly;
+- original authors receive credit;
+- uncertainty is marked clearly;
+- documents help maintenance rather than impress readers.
 
-| Word | Meaning |
-| --- | --- |
-| Confirmed | Verified from source or an actual test recorded in this repo. |
-| Expected | Likely based on source, but not yet tested. |
-| Unverified | Not tested or not proven in this repo. |
-| Blocked | Cannot move forward until a specific dependency is resolved. |
-| Out of scope | Not part of the current project boundary. |
+## Required project records
 
-## File Roles
+- `README.md` — entry point.
+- `STATUS.md` — current truth.
+- `TASKS.md` — active work.
+- `HANDOFF.md` — restart notes.
+- `DECISIONS.md` — stable decisions.
+- `CODEX.md` — AI-assisted development rules.
+- `CHANGELOG.md` — dated changes.
 
-| File | Job |
-| --- | --- |
-| `README.md` | Fast human entrypoint. |
-| `STATUS.md` | Active truth and validation state. |
-| `HANDOFF.md` | Next-session restart note. |
-| `TASKS.md` | Work queue. |
-| `DECISIONS.md` | Settled decisions. |
-| `PROJECT_RECORDS.md` | Documentation style contract. |
-| `CHANGELOG.md` | Dated change history. |
+## How to update records
 
-## Update Rhythm
+When a project direction changes:
 
-Update docs when one of these changes:
+1. Update `STATUS.md`.
+2. Update `DECISIONS.md` if the direction should remain stable.
+3. Update `TASKS.md` so the next action is clear.
+4. Update `HANDOFF.md` so the next session does not restart from old assumptions.
+5. Update `README.md` only after the scope is stable enough for readers.
 
-- Compatibility status.
-- Support boundary.
-- Packaging format.
-- License status.
-- Default shortcuts.
-- Runtime entrypoint.
-- DLL source or compatibility.
-- Any task moves from unverified to confirmed.
+## Rule for stale notes
+
+If a note conflicts with the current frame, update it or mark it obsolete.
+
+Current frame:
+
+```text
+WDS-1.0 — Windows 11 only.
+Current base — AutoHotkey v1.1.
+Target — AutoHotkey v2.
+```
