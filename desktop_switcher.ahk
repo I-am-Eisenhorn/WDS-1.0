@@ -1,239 +1,302 @@
-#Requires AutoHotkey v1.1.33+
-#SingleInstance Force ; The script will Reload if launched while already running
-#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases
-#KeyHistory 0 ; Ensures user privacy when debugging is not needed
-SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory
-SendMode Input  ; Recommended for new scripts due to its superior speed and reliability
+#Requires AutoHotkey v2.0
+#SingleInstance Force
+#Warn
 
-; Globals
-DesktopCount := 2        ; Windows starts with 2 desktops at boot
-CurrentDesktop := 1      ; Desktop count is 1-indexed (Microsoft numbers them this way)
+SetWorkingDir(A_ScriptDir)
+SetKeyDelay(75)
+
+DesktopCount := 1
+CurrentDesktop := 1
 LastOpenedDesktop := 1
+DesktopAccessor := ""
 
-; DLL
-hVirtualDesktopAccessor := DllCall("LoadLibrary", "Str", A_ScriptDir . "\VirtualDesktopAccessor.dll", "Ptr")
-global IsWindowOnDesktopNumberProc := DllCall("GetProcAddress", Ptr, hVirtualDesktopAccessor, AStr, "IsWindowOnDesktopNumber", "Ptr")
-global MoveWindowToDesktopNumberProc := DllCall("GetProcAddress", Ptr, hVirtualDesktopAccessor, AStr, "MoveWindowToDesktopNumber", "Ptr")
-global GoToDesktopNumberProc := DllCall("GetProcAddress", Ptr, hVirtualDesktopAccessor, AStr, "GoToDesktopNumber", "Ptr")
+Initialize()
 
-; Main
-SetKeyDelay, 75
-mapDesktopsFromRegistry()
-OutputDebug, [loading] desktops: %DesktopCount% current: %CurrentDesktop%
+Initialize() {
+    global DesktopAccessor, DesktopCount, CurrentDesktop
 
-#Include %A_ScriptDir%\user_config.ahk
-return
+    try {
+        DesktopAccessor := VirtualDesktopAccessor(A_ScriptDir "\VirtualDesktopAccessor.dll")
+        MapDesktopsFromRegistry()
+        OutputDebug(Format("[loading] desktops: {} current: {}", DesktopCount, CurrentDesktop))
+    } catch as error {
+        MsgBox("WDS 1.0 could not start.`n`n" error.Message, "WDS 1.0")
+        ExitApp(1)
+    }
+}
 
-;
-; This function examines the registry to build an accurate list of the current virtual desktops and which one we're currently on.
-; List of desktops appears to be in HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops
-; On Windows 11 the current desktop UUID appears to be in the same location
-; On previous versions in HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\SessionInfo\1\VirtualDesktops
-;
-mapDesktopsFromRegistry()
-{
+class VirtualDesktopAccessor {
+    __New(path) {
+        if !FileExist(path) {
+            throw Error("Missing VirtualDesktopAccessor.dll at " path)
+        }
+
+        this.Handle := DllCall("LoadLibrary", "Str", path, "Ptr")
+        if !this.Handle {
+            throw Error("Unable to load VirtualDesktopAccessor.dll. LastError: " A_LastError)
+        }
+
+        this.IsWindowOnDesktopNumber := this.GetProcAddress("IsWindowOnDesktopNumber")
+        this.MoveWindowToDesktopNumber := this.GetProcAddress("MoveWindowToDesktopNumber")
+        this.GoToDesktopNumber := this.GetProcAddress("GoToDesktopNumber")
+    }
+
+    GetProcAddress(name) {
+        proc := DllCall("GetProcAddress", "Ptr", this.Handle, "AStr", name, "Ptr")
+        if !proc {
+            throw Error("VirtualDesktopAccessor.dll does not export " name)
+        }
+        return proc
+    }
+}
+
+MapDesktopsFromRegistry() {
     global CurrentDesktop, DesktopCount
 
-    ; Get the current desktop UUID. Length should be 32 always, but there's no guarantee this couldn't change in a later Windows release so we check.
-    IdLength := 32
-    SessionId := getSessionId()
-    if (SessionId) {
-        RegRead, CurrentDesktopId, HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops, CurrentVirtualDesktop
-        if ErrorLevel {
-            RegRead, CurrentDesktopId, HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\SessionInfo\%SessionId%\VirtualDesktops, CurrentVirtualDesktop
+    idLength := 32
+    sessionId := GetSessionId()
+    currentDesktopId := ""
+
+    if sessionId {
+        currentDesktopId := RegReadSafe(
+            "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops",
+            "CurrentVirtualDesktop",
+            ""
+        )
+
+        if !currentDesktopId {
+            currentDesktopId := RegReadSafe(
+                "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\SessionInfo\" sessionId "\VirtualDesktops",
+                "CurrentVirtualDesktop",
+                ""
+            )
         }
-        
-        if (CurrentDesktopId) {
-            IdLength := StrLen(CurrentDesktopId)
+
+        if currentDesktopId {
+            idLength := StrLen(currentDesktopId)
         }
     }
 
-    ; Get a list of the UUIDs for all virtual desktops on the system
-    RegRead, DesktopList, HKEY_CURRENT_USER, SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops, VirtualDesktopIDs
-    if (DesktopList) {
-        DesktopListLength := StrLen(DesktopList)
-        ; Figure out how many virtual desktops there are
-        DesktopCount := floor(DesktopListLength / IdLength)
-    }
-    else {
-        DesktopCount := 1
-    }
+    desktopList := RegReadSafe(
+        "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops",
+        "VirtualDesktopIDs",
+        ""
+    )
 
-    ; Parse the REG_DATA string that stores the array of UUID's for virtual desktops in the registry.
+    DesktopCount := desktopList ? Max(1, Floor(StrLen(desktopList) / idLength)) : 1
+
     i := 0
-    while (CurrentDesktopId and i < DesktopCount) {
-        StartPos := (i * IdLength) + 1
-        DesktopIter := SubStr(DesktopList, StartPos, IdLength)
-        OutputDebug, The iterator is pointing at %DesktopIter% and count is %i%.
+    while currentDesktopId && desktopList && i < DesktopCount {
+        startPos := (i * idLength) + 1
+        desktopId := SubStr(desktopList, startPos, idLength)
 
-        ; Break out if we find a match in the list. If we didn't find anything, keep the
-        ; old guess and pray we're still correct :-D.
-        if (DesktopIter = CurrentDesktopId) {
+        if desktopId == currentDesktopId {
             CurrentDesktop := i + 1
-            OutputDebug, Current desktop number is %CurrentDesktop% with an ID of %DesktopIter%.
+            OutputDebug(Format("[desktop-map] current: {} id: {}", CurrentDesktop, desktopId))
             break
         }
-        i++
+
+        i += 1
     }
 }
 
-;
-; This functions finds out ID of current session.
-;
-getSessionId()
-{
-    ProcessId := DllCall("GetCurrentProcessId", "UInt")
-    if ErrorLevel {
-        OutputDebug, Error getting current process id: %ErrorLevel%
-        return
-    }
-    OutputDebug, Current Process Id: %ProcessId%
-
-    DllCall("ProcessIdToSessionId", "UInt", ProcessId, "UInt*", SessionId)
-    if ErrorLevel {
-        OutputDebug, Error getting session id: %ErrorLevel%
-        return
-    }
-    OutputDebug, Current Session Id: %SessionId%
-    return SessionId
-}
-
-_switchDesktopToTarget(targetDesktop)
-{
-    ; Globals variables should have been updated via updateGlobalVariables() prior to entering this function
-    global CurrentDesktop, DesktopCount, LastOpenedDesktop
-
-    ; Don't attempt to switch to an invalid desktop
-    if (targetDesktop > DesktopCount || targetDesktop < 1 || targetDesktop == CurrentDesktop) {
-        OutputDebug, [invalid] target: %targetDesktop% current: %CurrentDesktop%
-        return
-    }
-
-    LastOpenedDesktop := CurrentDesktop
-
-    ; Focus the taskbar to ensure that the application icons are not flashing
-    ; while switching desktops. Using SetForegroundWindow() instead of
-    ; WinActivate() here, because WinActivate() introduces a noticeable delay
-    ; in the interaction.
-    taskbarHwnd := DllCall("FindWindow", "Str", "Shell_TrayWnd", "Ptr", 0, "UPtr")
-    if (taskbarHwnd) {
-        DllCall("SetForegroundWindow", "UPtr", taskbarHwnd)
-    }
-
-    DllCall(GoToDesktopNumberProc, Int, targetDesktop-1)
-    focusTheForemostWindow(targetDesktop)
-}
-
-updateGlobalVariables()
-{
-    ; Re-generate the list of desktops and where we fit in that. We do this because
-    ; the user may have switched desktops via some other means than the script.
-    mapDesktopsFromRegistry()
-}
-
-switchDesktopByNumber(targetDesktop)
-{
-    global CurrentDesktop, DesktopCount
-    updateGlobalVariables()
-    _switchDesktopToTarget(targetDesktop)
-}
-
-switchDesktopToLastOpened()
-{
-    global CurrentDesktop, DesktopCount, LastOpenedDesktop
-    updateGlobalVariables()
-    _switchDesktopToTarget(LastOpenedDesktop)
-}
-
-switchDesktopToRight()
-{
-    global CurrentDesktop, DesktopCount
-    updateGlobalVariables()
-    _switchDesktopToTarget(CurrentDesktop == DesktopCount ? 1 : CurrentDesktop + 1)
-}
-
-switchDesktopToLeft()
-{
-    global CurrentDesktop, DesktopCount
-    updateGlobalVariables()
-    _switchDesktopToTarget(CurrentDesktop == 1 ? DesktopCount : CurrentDesktop - 1)
-}
-
-focusTheForemostWindow(targetDesktop) {
-    foremostWindowId := getForemostWindowIdOnDesktop(targetDesktop)
-    if isWindowNonMinimized(foremostWindowId) {
-        DllCall("SetForegroundWindow", "UPtr", foremostWindowId)
+RegReadSafe(keyName, valueName, defaultValue := "") {
+    try {
+        return RegRead(keyName, valueName, defaultValue)
+    } catch as error {
+        OutputDebug("[registry] failed: " keyName " / " valueName " (" error.Message ")")
+        return defaultValue
     }
 }
 
-isWindowNonMinimized(windowId) {
-    WinGet MMX, MinMax, ahk_id %windowId%
-    return MMX != -1
-}
+GetSessionId() {
+    try {
+        processId := DllCall("GetCurrentProcessId", "UInt")
+        sessionId := 0
+        ok := DllCall("ProcessIdToSessionId", "UInt", processId, "UInt*", &sessionId, "Int")
 
-getForemostWindowIdOnDesktop(n)
-{
-    n := n - 1 ; Desktops start at 0, while in script it's 1
-
-    ; winIDList contains a list of windows IDs ordered from the top to the bottom for each desktop.
-    WinGet winIDList, list
-    Loop % winIDList {
-        windowID := % winIDList%A_Index%
-        windowIsOnDesktop := DllCall(IsWindowOnDesktopNumberProc, UInt, windowID, UInt, n)
-        ; Select the first (and foremost) window which is in the specified desktop.
-        if (windowIsOnDesktop == 1) {
-            return windowID
+        if !ok {
+            OutputDebug("[session] ProcessIdToSessionId failed. LastError: " A_LastError)
+            return 0
         }
+
+        OutputDebug(Format("[session] process: {} session: {}", processId, sessionId))
+        return sessionId
+    } catch as error {
+        OutputDebug("[session] failed: " error.Message)
+        return 0
     }
+}
+
+UpdateGlobalVariables() {
+    MapDesktopsFromRegistry()
+}
+
+SwitchDesktopByNumber(targetDesktop) {
+    UpdateGlobalVariables()
+    SwitchDesktopToTarget(targetDesktop)
+}
+
+SwitchDesktopToLastOpened() {
+    global LastOpenedDesktop
+
+    UpdateGlobalVariables()
+    SwitchDesktopToTarget(LastOpenedDesktop)
+}
+
+SwitchDesktopToRight() {
+    global CurrentDesktop, DesktopCount
+
+    UpdateGlobalVariables()
+    SwitchDesktopToTarget(CurrentDesktop == DesktopCount ? 1 : CurrentDesktop + 1)
+}
+
+SwitchDesktopToLeft() {
+    global CurrentDesktop, DesktopCount
+
+    UpdateGlobalVariables()
+    SwitchDesktopToTarget(CurrentDesktop == 1 ? DesktopCount : CurrentDesktop - 1)
+}
+
+SwitchDesktopToTarget(targetDesktop) {
+    global CurrentDesktop, DesktopCount, LastOpenedDesktop, DesktopAccessor
+
+    if targetDesktop > DesktopCount || targetDesktop < 1 || targetDesktop == CurrentDesktop {
+        OutputDebug(Format("[invalid-switch] target: {} current: {} count: {}", targetDesktop, CurrentDesktop, DesktopCount))
+        return
+    }
+
+    previousDesktop := CurrentDesktop
+    LastOpenedDesktop := previousDesktop
+
+    taskbarHwnd := DllCall("FindWindow", "Str", "Shell_TrayWnd", "Ptr", 0, "Ptr")
+    if taskbarHwnd {
+        DllCall("SetForegroundWindow", "Ptr", taskbarHwnd, "Int")
+    }
+
+    DllCall(DesktopAccessor.GoToDesktopNumber, "Int", targetDesktop - 1, "Int")
+    CurrentDesktop := targetDesktop
+    FocusTheForemostWindow(targetDesktop)
+}
+
+FocusTheForemostWindow(targetDesktop) {
+    foremostWindowId := GetForemostWindowIdOnDesktop(targetDesktop)
+    if foremostWindowId && IsWindowNonMinimized(foremostWindowId) {
+        DllCall("SetForegroundWindow", "Ptr", foremostWindowId, "Int")
+    }
+}
+
+IsWindowNonMinimized(windowId) {
+    try {
+        return WinGetMinMax("ahk_id " windowId) != -1
+    } catch {
+        return false
+    }
+}
+
+GetForemostWindowIdOnDesktop(desktopNumber) {
+    global DesktopAccessor
+
+    desktopIndex := desktopNumber - 1
+
+    try {
+        for windowId in WinGetList() {
+            isOnDesktop := DllCall(
+                DesktopAccessor.IsWindowOnDesktopNumber,
+                "Ptr", windowId,
+                "UInt", desktopIndex,
+                "Int"
+            )
+
+            if isOnDesktop == 1 {
+                return windowId
+            }
+        }
+    } catch as error {
+        OutputDebug("[window-scan] failed: " error.Message)
+    }
+
+    return 0
 }
 
 MoveCurrentWindowToDesktop(desktopNumber) {
-    WinGet, activeHwnd, ID, A
-    DllCall(MoveWindowToDesktopNumberProc, UInt, activeHwnd, UInt, desktopNumber - 1)
-    switchDesktopByNumber(desktopNumber)
-}
+    UpdateGlobalVariables()
 
-MoveCurrentWindowToRightDesktop()
-{
-    global CurrentDesktop, DesktopCount
-    updateGlobalVariables()
-    WinGet, activeHwnd, ID, A
-    DllCall(MoveWindowToDesktopNumberProc, UInt, activeHwnd, UInt, (CurrentDesktop == DesktopCount ? 1 : CurrentDesktop + 1) - 1)
-    _switchDesktopToTarget(CurrentDesktop == DesktopCount ? 1 : CurrentDesktop + 1)
-}
-
-MoveCurrentWindowToLeftDesktop()
-{
-    global CurrentDesktop, DesktopCount
-    updateGlobalVariables()
-    WinGet, activeHwnd, ID, A
-    DllCall(MoveWindowToDesktopNumberProc, UInt, activeHwnd, UInt, (CurrentDesktop == 1 ? DesktopCount : CurrentDesktop - 1) - 1)
-    _switchDesktopToTarget(CurrentDesktop == 1 ? DesktopCount : CurrentDesktop - 1)
-}
-
-;
-; This function creates a new virtual desktop and switches to it
-;
-createVirtualDesktop()
-{
-    global CurrentDesktop, DesktopCount
-    Send, #^d
-    DesktopCount++
-    CurrentDesktop := DesktopCount
-    OutputDebug, [create] desktops: %DesktopCount% current: %CurrentDesktop%
-}
-
-;
-; This function deletes the current virtual desktop
-;
-deleteVirtualDesktop()
-{
-    global CurrentDesktop, DesktopCount, LastOpenedDesktop
-    Send, #^{F4}
-    if (LastOpenedDesktop >= CurrentDesktop) {
-        LastOpenedDesktop--
+    if MoveActiveWindowToDesktopNumber(desktopNumber) {
+        SwitchDesktopToTarget(desktopNumber)
     }
-    DesktopCount--
-    CurrentDesktop--
-    OutputDebug, [delete] desktops: %DesktopCount% current: %CurrentDesktop%
 }
+
+MoveCurrentWindowToRightDesktop() {
+    global CurrentDesktop, DesktopCount
+
+    UpdateGlobalVariables()
+    targetDesktop := CurrentDesktop == DesktopCount ? 1 : CurrentDesktop + 1
+    MoveCurrentWindowToDesktop(targetDesktop)
+}
+
+MoveCurrentWindowToLeftDesktop() {
+    global CurrentDesktop, DesktopCount
+
+    UpdateGlobalVariables()
+    targetDesktop := CurrentDesktop == 1 ? DesktopCount : CurrentDesktop - 1
+    MoveCurrentWindowToDesktop(targetDesktop)
+}
+
+MoveActiveWindowToDesktopNumber(desktopNumber) {
+    global DesktopCount, DesktopAccessor
+
+    if desktopNumber < 1 || desktopNumber > DesktopCount {
+        OutputDebug(Format("[invalid-move] target: {} count: {}", desktopNumber, DesktopCount))
+        return false
+    }
+
+    try {
+        activeHwnd := WinGetID("A")
+        DllCall(
+            DesktopAccessor.MoveWindowToDesktopNumber,
+            "Ptr", activeHwnd,
+            "UInt", desktopNumber - 1,
+            "Int"
+        )
+        return true
+    } catch as error {
+        OutputDebug("[move-window] failed: " error.Message)
+        return false
+    }
+}
+
+CreateVirtualDesktop() {
+    global DesktopCount, CurrentDesktop, LastOpenedDesktop
+
+    UpdateGlobalVariables()
+    LastOpenedDesktop := CurrentDesktop
+    Send("#^d")
+    Sleep(200)
+    MapDesktopsFromRegistry()
+
+    OutputDebug(Format("[create] desktops: {} current: {}", DesktopCount, CurrentDesktop))
+}
+
+DeleteVirtualDesktop() {
+    global CurrentDesktop, DesktopCount, LastOpenedDesktop
+
+    UpdateGlobalVariables()
+
+    if DesktopCount <= 1 {
+        OutputDebug("[delete] skipped because only one desktop is known")
+        return
+    }
+
+    Send("#^{F4}")
+    Sleep(200)
+
+    if LastOpenedDesktop >= CurrentDesktop {
+        LastOpenedDesktop := Max(1, LastOpenedDesktop - 1)
+    }
+
+    MapDesktopsFromRegistry()
+    OutputDebug(Format("[delete] desktops: {} current: {}", DesktopCount, CurrentDesktop))
+}
+
+#Include user_config.ahk
