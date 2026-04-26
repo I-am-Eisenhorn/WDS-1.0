@@ -2,32 +2,29 @@
 
 ## Now
 
-- Replace stale documentation that treats AutoHotkey v1 compatibility as a goal.
-- Replace stale documentation that includes Windows 10 as a validation target.
-- Document the project as Windows 11 only.
-- Document AutoHotkey v2 as the target runtime.
-- Keep fork credit visible and simple.
+- Run the manual checklist on Windows 11 with AutoHotkey v2.
+- Record the Windows 11 build and AutoHotkey v2 version.
+- Confirm that `VirtualDesktopAccessor.dll` loads correctly.
+- Confirm that the v2 hotkeys register correctly.
+- Confirm direct desktop switching, left/right switching, and last-desktop switching.
+- Confirm create/delete desktop behavior.
+- Confirm moving the active window between desktops.
+- Record normal versus administrator behavior.
 
 ## Next
 
-- Inventory current v1 behavior from `desktop_switcher.ahk` and `user_config.ahk`.
-- Create a small AutoHotkey v2 migration map.
-- Decide target entrypoint name.
-- Decide whether `VirtualDesktopAccessor.dll` remains part of the first v2 implementation.
-- Draft a v2 skeleton with no behavior change claims.
-- Port hotkey definitions to v2.
-- Port desktop switching functions to v2.
-- Port window moving functions to v2.
-- Port registry access and state detection to v2.
-- Create a Windows 11 manual test pass.
+- Fix any syntax or runtime issue found during the Windows 11 manual test.
+- Decide whether any default hotkeys should change after testing.
+- Add troubleshooting notes based on real failures, not guesses.
+- Decide whether release packaging should remain script-only or include a small bundle.
+- Update README quick start only after manual test evidence exists.
 
 ## Later
 
-- Simplify configuration.
-- Add startup guidance for Windows 11.
+- Consider separating desktop state, switching, and window movement into `lib/`.
 - Add release packaging notes.
-- Add troubleshooting notes after real Windows 11 testing.
-- Consider separating library logic from user hotkey configuration.
+- Add startup guidance for Windows 11.
+- Consider a small debug mode if manual testing shows it would help.
 
 ## Blocked until Windows 11 testing
 
@@ -41,6 +38,9 @@
 
 - Project frame clarified:
   - Windows 11 only.
-  - Current base: AutoHotkey v1.1.
   - Target: AutoHotkey v2.
-  - Human-first documentation means clear attribution, not promotional tone.
+  - Human-first documentation means clear attribution and practical writing.
+- Current v1 behavior inventoried in `docs/v1_behavior_inventory.md`.
+- Old v1 runtime preserved under `legacy/v1/`.
+- First AutoHotkey v2 runtime candidate added as `desktop_switcher.ahk`.
+- First AutoHotkey v2 hotkey config added as `user_config.ahk`.
