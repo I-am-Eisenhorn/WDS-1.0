@@ -1,88 +1,101 @@
 # WDS 1.0
 
-Windows 11 virtual desktop workflow, built with AutoHotkey.
+Windows 11 virtual desktop workflow, built with AutoHotkey v2.
 
-WDS 1.0 is a small Windows automation project focused on direct, predictable virtual desktop control. The current repository contains an AutoHotkey v1.1 implementation. The project target is AutoHotkey v2 on Windows 11.
-
-This project started as a fork of `windows-desktop-switcher`. We keep that origin visible and appreciate the people who created the original work. The fork history is provenance, not a technical constraint: this project may reuse, replace, simplify, or redesign inherited parts when that serves the Windows 11 + AutoHotkey v2 goal.
+WDS 1.0 is a small Windows automation project focused on direct, predictable
+virtual desktop control. It started as a fork of `windows-desktop-switcher`; the
+fork origin remains visible, but the current technical target is an independent
+Windows 11 + AutoHotkey v2 implementation.
 
 ## Project scope
 
 - Platform: Windows 11 only.
-- Current codebase: AutoHotkey v1.1 script structure.
-- Target runtime: AutoHotkey v2.
+- Runtime target: AutoHotkey v2.
+- Current entrypoint: `desktop_switcher.ahk`.
+- Configuration: `user_config.ahk`.
+- Native helper: `VirtualDesktopAccessor.dll`.
 - Documentation style: calm, practical, human-first.
-- Compatibility target: current Windows 11 behavior, not Windows 10.
+
+AutoHotkey v1 compatibility is not a project goal.
+Windows 10 compatibility is not a project goal.
 
 ## Current state
 
-The existing runtime files are treated as a reference while the project moves to AutoHotkey v2:
+The repository now contains a first AutoHotkey v2 runtime candidate:
 
-- `desktop_switcher.ahk` — legacy main script.
-- `user_config.ahk` — legacy user hotkey configuration.
-- `VirtualDesktopAccessor.dll` — native helper used by the current implementation.
+- `desktop_switcher.ahk` - AutoHotkey v2 entrypoint.
+- `user_config.ahk` - AutoHotkey v2 hotkey configuration.
+- `VirtualDesktopAccessor.dll` - native helper used for desktop/window access.
+- `legacy/v1/desktop_switcher.ahk` - old AutoHotkey v1.1 reference script.
+- `legacy/v1/user_config.ahk` - old AutoHotkey v1.1 reference hotkeys.
 
-The target implementation is not “v1 with small edits”. It is a migration to AutoHotkey v2 syntax and behavior.
+The v2 candidate has not yet been manually tested on Windows 11 with
+AutoHotkey v2. Do not describe it as proven until the manual checklist is run
+and recorded.
 
-## What the project is meant to do
+## What WDS does
 
-The current behavior to understand and, where useful, carry forward:
+The v2 candidate is intended to support:
 
 - Switch directly to virtual desktops by number.
 - Move left or right between virtual desktops.
 - Return to the last opened desktop.
 - Create and delete virtual desktops.
-- Move the current window to another desktop.
-- Keep hotkeys configurable.
+- Move the current window to another desktop and follow it.
+- Keep hotkeys configurable in `user_config.ahk`.
 
-The final v2 implementation may change internal structure and names if that makes the project clearer and easier to maintain.
-
-## AutoHotkey versions
-
-Current reference runtime:
+## Requirements
 
 ```text
-AutoHotkey v1.1
-https://www.autohotkey.com/download/1.1/
+Windows 11
+AutoHotkey v2
+VirtualDesktopAccessor.dll beside desktop_switcher.ahk
 ```
 
-Target runtime:
+Target AutoHotkey runtime:
 
 ```text
-AutoHotkey v2
 https://www.autohotkey.com/download/ahk-v2.exe
 ```
 
-Do not run the current v1 script as if it were already an AutoHotkey v2 script. The migration must update syntax, function calls, hotkey definitions where needed, registry access, DLL calls, error handling, and startup behavior.
+## Run locally
+
+1. Install AutoHotkey v2.
+2. Keep `VirtualDesktopAccessor.dll` in the same folder as `desktop_switcher.ahk`.
+3. Run `desktop_switcher.ahk`.
+4. Edit `user_config.ahk` if you want different hotkeys.
+5. Reload `desktop_switcher.ahk` after changing hotkeys.
+
+This is a migration candidate, not a final release note. Record the Windows 11
+manual test result before treating the runtime as confirmed.
 
 ## Documentation map
 
 Read these files before changing code:
 
-- [STATUS.md](STATUS.md) — current project truth.
-- [TASKS.md](TASKS.md) — active work queue.
-- [HANDOFF.md](HANDOFF.md) — compact restart notes.
-- [DECISIONS.md](DECISIONS.md) — decisions that should stay stable unless explicitly changed.
-- [CODEX.md](CODEX.md) — instructions for Codex or other AI-assisted work.
-- [PROJECT_RECORDS.md](PROJECT_RECORDS.md) — writing rules for project notes.
-- [HUMAN_FIRST.md](HUMAN_FIRST.md) — short note on attribution and project tone.
-
-Useful docs:
-
-- [docs/architecture.md](docs/architecture.md)
-- [docs/migration_ahk_v2.md](docs/migration_ahk_v2.md)
-- [docs/manual_test_checklist.md](docs/manual_test_checklist.md)
+- [STATUS.md](STATUS.md) - current project truth.
+- [TASKS.md](TASKS.md) - active work queue.
+- [HANDOFF.md](HANDOFF.md) - compact restart notes.
+- [DECISIONS.md](DECISIONS.md) - decisions that should stay stable unless explicitly changed.
+- [CODEX.md](CODEX.md) - instructions for Codex or other AI-assisted work.
+- [PROJECT_RECORDS.md](PROJECT_RECORDS.md) - writing rules for project notes.
+- [HUMAN_FIRST.md](HUMAN_FIRST.md) - short note on attribution and project tone.
+- [docs/architecture.md](docs/architecture.md) - runtime shape.
+- [docs/migration_ahk_v2.md](docs/migration_ahk_v2.md) - migration notes.
+- [docs/v1_behavior_inventory.md](docs/v1_behavior_inventory.md) - behavior carried from the old script.
+- [docs/manual_test_checklist.md](docs/manual_test_checklist.md) - Windows 11 test checklist.
 
 ## Working principles
 
 - Keep credit visible.
-- Keep the documentation plain and useful.
+- Keep documentation plain and useful.
 - Do not add Windows 10 as a support goal.
-- Do not preserve AutoHotkey v1 compatibility as a target unless explicitly requested.
-- Make small, reviewable changes.
-- Separate documentation changes from runtime changes.
+- Do not preserve AutoHotkey v1 compatibility as a target.
+- Make small, reviewable runtime changes.
 - Do not claim runtime success without a Windows 11 manual test.
 
 ## Credits
 
-This project descends from the original `windows-desktop-switcher` work. Thank you to the people who created and shared it. Their work gave this project a starting point.
+This project descends from the original `windows-desktop-switcher` work. Thank
+you to the people who created and shared it. Their work gave this project a
+starting point.
