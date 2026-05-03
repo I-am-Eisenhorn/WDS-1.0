@@ -1,0 +1,255 @@
+# Off-host sandbox test for wds-2.0-cc.
+#
+# Runs on a fresh Microsoft-hosted Windows VM (windows-latest, Server 2022 SKU
+# under the hood). Nothing here touches the maintainer's local Windows install.
+#
+# Stages:
+#   1. Download portable AutoHotkey v2 + Ahk2Exe from autohotkey.com and unzip.
+#   2. Syntax-validate desktop_switcher.ahk.
+#   3. Start desktop_switcher.ahk for ~5s; fail if it crashes or pops an
+#      "WDS 1.0 could not start" error MsgBox (Initialize() failure path).
+#   4. Compile a standalone desktop_switcher.exe via Ahk2Exe and bundle the
+#      product (exe + dll + user_config.ahk + LICENSE + README) as an artifact.
+#   5. Run an isolated keypress smoke test: a tiny AHK script registers
+#      Ctrl+Alt+F12, sends it to itself via SendInput, and writes the result
+#      to disk. This validates AHK's hotkey-fire path independently of the
+#      desktop-switcher product code and the VirtualDesktopAccessor.dll.
+#
+# What this workflow does NOT validate:
+#   - Real Windows 11 virtual-desktop switching behavior. CI runners only have
+#     a minimal session; the IVirtualDesktopManager COM state is empty.
+#     Manual testing on a real Windows 11 desktop is still required (see
+#     docs/manual_test_checklist.md and STATUS.md "Needs confirmation").
+
+name: Sandbox Test (wds-2.0-cc)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [wds-2.0-cc]
+    paths:
+      - 'desktop_switcher.ahk'
+      - 'user_config.ahk'
+      - 'VirtualDesktopAccessor.dll'
+      - '.github/workflows/sandbox-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox:
+    name: AutoHotkey v2 sandbox on windows-latest
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    env:
+      AHK_VERSION: 2.0.18
+      AHK_DIR: C:\AHK
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download portable AutoHotkey v2 + Ahk2Exe
+        shell: pwsh
+        run: |
+          $ahkZip = "$env:RUNNER_TEMP\ahk.zip"
+          $a2eZip = "$env:RUNNER_TEMP\ahk2exe.zip"
+          $ahkUrl = "https://www.autohotkey.com/download/2.0/AutoHotkey_$env:AHK_VERSION.zip"
+          $a2eUrl = "https://www.autohotkey.com/download/ahk2exe.zip"
+
+          Write-Host "Downloading AutoHotkey $env:AHK_VERSION from $ahkUrl"
+          Invoke-WebRequest -Uri $ahkUrl -OutFile $ahkZip -UseBasicParsing
+          Write-Host "Downloading Ahk2Exe from $a2eUrl"
+          Invoke-WebRequest -Uri $a2eUrl -OutFile $a2eZip -UseBasicParsing
+
+          New-Item -ItemType Directory -Path $env:AHK_DIR -Force | Out-Null
+          Expand-Archive -Path $ahkZip -DestinationPath $env:AHK_DIR -Force
+
+          $a2eOut = "$env:AHK_DIR\Compiler"
+          New-Item -ItemType Directory -Path $a2eOut -Force | Out-Null
+          Expand-Archive -Path $a2eZip -DestinationPath $a2eOut -Force
+
+          Write-Host "--- AHK_DIR contents ---"
+          Get-ChildItem $env:AHK_DIR -Recurse -File | Select-Object FullName, Length | Format-Table -AutoSize
+
+      - name: Verify AutoHotkey runtime version
+        shell: pwsh
+        run: |
+          $ahk = "$env:AHK_DIR\AutoHotkey64.exe"
+          if (-not (Test-Path $ahk)) { throw "AutoHotkey64.exe not found at $ahk" }
+
+          $verScript = "$env:RUNNER_TEMP\ver.ahk"
+          @"
+          FileAppend(A_AhkVersion, "*")
+          ExitApp(0)
+          "@ | Set-Content -Path $verScript -Encoding UTF8
+
+          $version = & $ahk $verScript
+          Write-Host "AutoHotkey reported version: $version"
+          if (-not $version) { throw "AutoHotkey did not return a version string." }
+
+          "AHK_EXE=$ahk" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      - name: Syntax validate desktop_switcher.ahk
+        shell: pwsh
+        run: |
+          # /validate parses the script (and #Include user_config.ahk) without running it.
+          # Returns 0 on success, 2 on syntax error.
+          $log = "$env:RUNNER_TEMP\validate.log"
+          & $env:AHK_EXE /validate desktop_switcher.ahk *> $log
+          $code = $LASTEXITCODE
+          Write-Host "/validate exit code: $code"
+          if (Test-Path $log) { Get-Content $log }
+          if ($code -ne 0) {
+              Write-Host "::error::desktop_switcher.ahk failed AHK v2 syntax validation."
+              exit 1
+          }
+
+      - name: Startup smoke test of desktop_switcher.ahk
+        shell: pwsh
+        run: |
+          $stderr = "$env:RUNNER_TEMP\startup.err.log"
+          $stdout = "$env:RUNNER_TEMP\startup.out.log"
+
+          $proc = Start-Process -FilePath $env:AHK_EXE `
+                                -ArgumentList 'desktop_switcher.ahk' `
+                                -WorkingDirectory (Get-Location) `
+                                -PassThru `
+                                -RedirectStandardError $stderr `
+                                -RedirectStandardOutput $stdout
+
+          Start-Sleep -Seconds 4
+
+          if ($proc.HasExited) {
+              Write-Host "::error::Process exited within 4s with code $($proc.ExitCode) — startup failure."
+              if (Test-Path $stderr) { Write-Host '--- stderr ---'; Get-Content $stderr }
+              if (Test-Path $stdout) { Write-Host '--- stdout ---'; Get-Content $stdout }
+              exit 1
+          }
+
+          # Initialize() shows a "WDS 1.0" MsgBox on DLL load failure. Detect it.
+          $live = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
+          $title = if ($live) { $live.MainWindowTitle } else { '' }
+          if ($title -eq 'WDS 1.0') {
+              Write-Host "::error::Initialize() error MsgBox is showing (window title 'WDS 1.0') — VirtualDesktopAccessor.dll likely failed to load."
+              Stop-Process -Id $proc.Id -Force
+              exit 1
+          }
+
+          Write-Host "Process resident after 4s, no error MsgBox detected — startup OK. Window title: '$title'"
+          Stop-Process -Id $proc.Id -Force
+          Start-Sleep -Seconds 1
+
+          if ((Test-Path $stderr) -and ((Get-Item $stderr).Length -gt 0)) {
+              Write-Host '--- stderr ---'
+              Get-Content $stderr
+          }
+
+      - name: Compile desktop_switcher.exe with Ahk2Exe and bundle product
+        shell: pwsh
+        run: |
+          $a2e = "$env:AHK_DIR\Compiler\Ahk2Exe.exe"
+          if (-not (Test-Path $a2e)) {
+              Write-Host "Ahk2Exe not found at $a2e — listing Compiler folder:"
+              Get-ChildItem "$env:AHK_DIR\Compiler" -Recurse | Format-Table FullName
+              exit 1
+          }
+
+          $base = (Get-Location).Path
+          $out  = "$env:RUNNER_TEMP\dist"
+          New-Item -ItemType Directory -Path $out -Force | Out-Null
+
+          & $a2e /in "$base\desktop_switcher.ahk" `
+                 /out "$out\desktop_switcher.exe" `
+                 /base "$env:AHK_DIR\AutoHotkey64.exe"
+
+          if (-not (Test-Path "$out\desktop_switcher.exe")) {
+              Write-Host "::error::Ahk2Exe did not produce desktop_switcher.exe"
+              exit 1
+          }
+
+          Copy-Item "$base\VirtualDesktopAccessor.dll" $out
+          Copy-Item "$base\user_config.ahk"            $out
+          Copy-Item "$base\README.md"                  $out
+          Copy-Item "$base\LICENSE.txt"                $out
+
+          $zip = "$env:RUNNER_TEMP\wds-2.0-cc.zip"
+          Compress-Archive -Path "$out\*" -DestinationPath $zip -Force
+
+          Write-Host "--- Built bundle ---"
+          Get-ChildItem $out | Format-Table Name, Length, LastWriteTime
+          Write-Host "Bundle archive: $zip ($((Get-Item $zip).Length) bytes)"
+
+      - name: Keypress smoke test (independent of product code)
+        shell: pwsh
+        run: |
+          $dir = "$env:RUNNER_TEMP\hotkey"
+          New-Item -ItemType Directory -Path $dir -Force | Out-Null
+
+          $script = @'
+          #Requires AutoHotkey v2.0
+          #SingleInstance Force
+
+          ^!F12:: {
+              FileAppend("HOTKEY_FIRED", A_ScriptDir "\hotkey_result.txt")
+              ExitApp(0)
+          }
+
+          SetTimer(SendIt, -1500)
+          SetTimer(Timeout, -5000)
+
+          SendIt() {
+              SendInput("^!{F12}")
+          }
+
+          Timeout() {
+              FileAppend("TIMEOUT_NO_FIRE", A_ScriptDir "\hotkey_result.txt")
+              ExitApp(2)
+          }
+          '@
+
+          $scriptPath = "$dir\keypress_smoke.ahk"
+          Set-Content -Path $scriptPath -Value $script -Encoding UTF8
+
+          $resultFile = "$dir\hotkey_result.txt"
+          if (Test-Path $resultFile) { Remove-Item $resultFile }
+
+          $proc = Start-Process -FilePath $env:AHK_EXE -ArgumentList $scriptPath -PassThru -Wait
+
+          if (Test-Path $resultFile) {
+              $result = (Get-Content $resultFile -Raw).Trim()
+              Write-Host "Hotkey result: '$result' (process exit code: $($proc.ExitCode))"
+              switch ($result) {
+                  'HOTKEY_FIRED'    { Write-Host "::notice::Keypress test PASSED — AHK fires synthetic hotkeys in this CI environment." }
+                  'TIMEOUT_NO_FIRE' {
+                      Write-Host "::warning::Keypress test FAILED — AHK runtime did not register the synthetic hotkey within 5s."
+                      Write-Host "Expected on headless GHA runners without an interactive desktop session. Real Windows 11 manual test still required."
+                  }
+                  default { Write-Host "::warning::Unexpected result string: '$result'" }
+              }
+          } else {
+              Write-Host "::warning::No result file produced. Process exit code: $($proc.ExitCode)"
+          }
+
+          # Probe, not a gate — never fail the workflow on this step.
+          exit 0
+
+      - name: Upload product bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wds-2.0-cc-build
+          path: ${{ runner.temp }}/wds-2.0-cc.zip
+          if-no-files-found: warn
+
+      - name: Upload diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-logs
+          path: |
+            ${{ runner.temp }}/validate.log
+            ${{ runner.temp }}/startup.*.log
+            ${{ runner.temp }}/hotkey/hotkey_result.txt
+          if-no-files-found: warn
